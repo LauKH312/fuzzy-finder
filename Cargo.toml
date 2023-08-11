@@ -1,0 +1,24 @@
+[package]
+name = "fuzzie"
+version = "0.1.0"
+edition = "2021"
+authors = ["@laukh312"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+egui = "0.22.0"
+eframe = "0.22.0"
+clap = { version = "4.3.21", features = ["derive"] }
+rayon = "1.5.1"
+catppuccin-egui = "3.0.0"
+serde = { version = "1.0.183", features = ["derive"] }
+serde_json = "1.0.104"
+walkdir = "2.3.3"
+serde_bare = "0.5.0"
+bincode = "1.3.3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
