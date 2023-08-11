@@ -22,11 +22,46 @@ impl App {
             cached_paths: None,
         })
     }
+
+    fn cache_paths(&mut self) {
+        let search = self.paths.iter().filter(|path| {
+            path.to_str()
+                .unwrap()
+                .to_lowercase()
+                .contains(&self.search.to_lowercase())
+        });
+
+        self.cached_paths = Some(BTreeSet::from_iter(search.clone().cloned()));
+    }
+
+    fn print_searched_paths(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        let max_items = 25;
+
+        if self.search.len() % 5 == 0 && !self.search.is_empty() {
+            self.cache_paths();
+        }
+
+        let shown_paths = match &self.cached_paths {
+            Some(paths) => paths.iter(),
+            None => self.paths.iter(),
+        }
+        .filter(|path| {
+            path.to_str()
+                .map(|s| s.to_lowercase().contains(&self.search.to_lowercase()))
+                .unwrap_or(false)
+        })
+        .take(max_items);
+
+        for path in shown_paths {
+            if ui.button(path.to_str().unwrap()).clicked() {
+                spawn_process(path, frame);
+            }
+        }
+    }
 }
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        let max_items = 25;
         catppuccin_egui::set_theme(ctx, catppuccin_egui::MOCHA);
         setup_fonts(ctx);
 
@@ -40,59 +75,7 @@ impl eframe::App for App {
                 });
 
                 ui.vertical(|ui| {
-                    match self.cached_paths {
-                        Some(ref paths) => {
-                            let shown_paths = paths
-                                .iter()
-                                .filter(|path| {
-                                    path.to_str()
-                                        .unwrap()
-                                        .to_lowercase()
-                                        .contains(&self.search.to_lowercase())
-                                })
-                                .take(max_items);
-
-                            for path in shown_paths {
-                                if ui.button(path.to_str().unwrap()).clicked() {
-                                    spawn_process(path, frame);
-                                }
-                            }
-                        }
-
-                        None => {
-                            // results
-                            // TODO : make this cache subtrees
-                            let shown_paths = self
-                                .paths
-                                .iter()
-                                .filter(|path| {
-                                    path.to_str()
-                                        .unwrap()
-                                        .to_lowercase()
-                                        .contains(&self.search.to_lowercase())
-                                })
-                                .take(max_items);
-
-                                if self.search.len() == 3 {
-                                    let paths = self.paths.clone();
-                                    let filtered = paths
-                                        .iter()
-                                        .filter(|path| {
-                                            path.to_str()
-                                                .unwrap()
-                                                .to_lowercase()
-                                                .contains(&self.search.to_lowercase())
-                                        });
-                                    self.cached_paths = Some(filtered.cloned().collect());
-                                }
-
-                            for path in shown_paths {
-                                if ui.button(path.to_str().unwrap()).clicked() {
-                                    spawn_process(path, frame);
-                                }
-                            }
-                        }
-                    }
+                    self.print_searched_paths(ui, frame);
 
                     // parse user commands
                     if self.search.ends_with('!') {

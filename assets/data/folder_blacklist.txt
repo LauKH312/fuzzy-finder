@@ -1,0 +1,3 @@
+# Blacklisted folder names
+node_modules
+bower_components
