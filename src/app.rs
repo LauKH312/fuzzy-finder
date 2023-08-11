@@ -1,4 +1,8 @@
-use std::{collections::BTreeSet, error::Error, path::PathBuf};
+use std::{
+    collections::BTreeSet,
+    error::Error,
+    path::{Path, PathBuf},
+};
 
 use eframe::egui;
 
@@ -7,6 +11,7 @@ use crate::fileops;
 pub struct App {
     search: String,
     paths: BTreeSet<PathBuf>,
+    cached_paths: Option<BTreeSet<PathBuf>>,
 }
 
 impl App {
@@ -14,6 +19,7 @@ impl App {
         Ok(Self {
             search: String::new(),
             paths: fileops::get_all_in_dir_parallel(&dir)?,
+            cached_paths: None,
         })
     }
 }
@@ -34,32 +40,64 @@ impl eframe::App for App {
                 });
 
                 ui.vertical(|ui| {
-                    // results
-                    // TODO : make this cache subtrees
-                    let shown_paths = self
-                        .paths
-                        .iter()
-                        .filter(|path| {
-                            path.to_str()
-                                .unwrap()
-                                .to_lowercase()
-                                .contains(&self.search.to_lowercase())
-                        })
-                        .take(max_items);
+                    match self.cached_paths {
+                        Some(ref paths) => {
+                            let shown_paths = paths
+                                .iter()
+                                .filter(|path| {
+                                    path.to_str()
+                                        .unwrap()
+                                        .to_lowercase()
+                                        .contains(&self.search.to_lowercase())
+                                })
+                                .take(max_items);
+
+                            for path in shown_paths {
+                                if ui.button(path.to_str().unwrap()).clicked() {
+                                    spawn_process(path, frame);
+                                }
+                            }
+                        }
+
+                        None => {
+                            // results
+                            // TODO : make this cache subtrees
+                            let shown_paths = self
+                                .paths
+                                .iter()
+                                .filter(|path| {
+                                    path.to_str()
+                                        .unwrap()
+                                        .to_lowercase()
+                                        .contains(&self.search.to_lowercase())
+                                })
+                                .take(max_items);
+
+                                if self.search.len() == 3 {
+                                    let paths = self.paths.clone();
+                                    let filtered = paths
+                                        .iter()
+                                        .filter(|path| {
+                                            path.to_str()
+                                                .unwrap()
+                                                .to_lowercase()
+                                                .contains(&self.search.to_lowercase())
+                                        });
+                                    self.cached_paths = Some(filtered.cloned().collect());
+                                }
+
+                            for path in shown_paths {
+                                if ui.button(path.to_str().unwrap()).clicked() {
+                                    spawn_process(path, frame);
+                                }
+                            }
+                        }
+                    }
 
                     // parse user commands
                     if self.search.ends_with('!') {
                         frame.close();
                         std::process::exit(0);
-                    }
-
-                    for path in shown_paths {
-                        if ui
-                            .button(path.to_str().unwrap())
-                            .clicked()
-                        {
-                            spawn_process(path, frame);
-                        }
                     }
                 });
             });
@@ -67,9 +105,9 @@ impl eframe::App for App {
     }
 }
 
-fn spawn_process(path: &PathBuf, frame: &mut eframe::Frame) -> ! {
+fn spawn_process(path: &Path, frame: &mut eframe::Frame) -> ! {
     std::process::Command::new("explorer")
-        .arg(path.to_str().unwrap().replace("/", r"\"))
+        .arg(path.to_str().unwrap().replace('/', r"\"))
         .spawn()
         .expect("Error opening file explorer");
 

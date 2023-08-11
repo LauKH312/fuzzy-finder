@@ -14,70 +14,10 @@ pub const CACHE_DIR: &str = "C:/ProgramData/fuzzie-finder/cache";
 pub fn get_all_in_dir_parallel(dir: &Path) -> Result<BTreeSet<PathBuf>, Box<dyn Error>> {
     let paths = Mutex::new(BTreeSet::new());
 
-    let format_whitelist = vec![
-        // SOURCE CODE FORMATS
-        "ada",
-        "asm",
-        "c",
-        "cpp",
-        "c++",
-        "cxx",
-        "cs",
-        "css",
-        "dart",
-        "fs",
-        "go",
-        "h",
-        "hpp",
-        "h++",
-        "hxx",
-        "html",
-        "java",
-        "js",
-        "jsx",
-        "kt",
-        "lua",
-        "php",
-        "py",
-        "rb",
-        "rs",
-        "s",
-        "sass",
-        "scss",
-        "scala",
-        "sh",
-        "svelte",
-        "swift",
-        "ts",
-        "tsx",
-        "zig",
-        // DATA FORMATS
-        "bat",
-        "csv",
-        "env",
-        "json",
-        "lock",
-        "xml",
-        // CONFIG FORMATS
-        "cfg",
-        "conf",
-        "editorconfig",
-        "git",
-        "gitattributes",
-        "gitconfig",
-        "gitignore",
-        "gitkeep",
-        "gitmodules",
-        "ignore",
-        "ini",
-        "toml",
-        "yaml",
-        "yml",
-        // OTHER TEXT FORMATS
-        "log",
-        "md",
-        "txt",
-    ];
+    let format_whitelist = include_str!("../assets/data/whitelist.txt")
+        .split('\n')
+        .filter(|line| !line.starts_with('#')) // allow comments
+        .collect::<Vec<&str>>();
 
     if Path::new(CACHE_DIR).exists() {
         let serialized = fs::read(CACHE_DIR)?;
@@ -95,8 +35,8 @@ pub fn get_all_in_dir_parallel(dir: &Path) -> Result<BTreeSet<PathBuf>, Box<dyn 
             // Make sure entry isn't a binary file or other coded formats
             let entry = entry.as_ref().unwrap();
             let path = entry.path();
-            let ext = path.extension();
-            match ext {
+
+            match path.extension() {
                 Some(ext) => match ext.to_str() {
                     Some(ext) => allowed_extensions.contains(&ext),
                     _ => false,

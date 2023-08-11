@@ -32,13 +32,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let options = NativeOptions {
         always_on_top: true,
         transparent: true,
+        initial_window_size: Some(egui::Vec2::new(900.0, 700.0)),
         ..Default::default()
     };
 
     if args.cache {
         let tree = fileops::get_all_in_dir_parallel(&dir)?;
         let arr = tree.iter().collect::<Vec<&PathBuf>>();
-        // let serialized = serde_json::to_string(&arr)?;
         let serialized = bincode::serialize(&arr)?;
         fs::write(fileops::CACHE_DIR, serialized)?;
     }
