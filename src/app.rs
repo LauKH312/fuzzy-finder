@@ -6,7 +6,7 @@ use std::{
 
 use eframe::egui;
 
-use crate::fileops;
+use crate::{fileops, gruvbox};
 
 pub struct App {
     search: String,
@@ -34,10 +34,10 @@ impl App {
         self.cached_paths = Some(BTreeSet::from_iter(search.clone().cloned()));
     }
 
-    fn print_searched_paths(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+    fn render_searched_paths(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let max_items = 25;
 
-        if self.search.len() % 5 == 0 && !self.search.is_empty() {
+        if self.search.len() % 3 == 0 && !self.search.is_empty() {
             self.cache_paths();
         }
 
@@ -53,7 +53,13 @@ impl App {
         .take(max_items);
 
         for path in shown_paths {
-            if ui.button(path.to_str().unwrap()).clicked() {
+            // if ui.button(path.to_str().unwrap()).wrap(false).clicked() {
+            //     spawn_process(path, frame);
+            // }
+            if ui
+                .add(egui::Button::new(path.to_str().unwrap()).wrap(false))
+                .clicked()
+            {
                 spawn_process(path, frame);
             }
         }
@@ -62,7 +68,8 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-        catppuccin_egui::set_theme(ctx, catppuccin_egui::MOCHA);
+        // catppuccin_egui::set_theme(ctx, catppuccin_egui::MOCHA);
+        gruvbox::set_theme(ctx, gruvbox::DARK);
         setup_fonts(ctx);
 
         ctx.set_pixels_per_point(1.5);
@@ -75,7 +82,7 @@ impl eframe::App for App {
                 });
 
                 ui.vertical(|ui| {
-                    self.print_searched_paths(ui, frame);
+                    self.render_searched_paths(ui, frame);
 
                     // parse user commands
                     if self.search.ends_with('!') {
@@ -103,7 +110,7 @@ fn setup_fonts(ctx: &egui::Context) {
     fonts.font_data.insert(
         "Inconsolata".to_owned(),
         egui::FontData::from_static(include_bytes!(
-            "C:/Users/Laurits/Documents/Hobby/Kode/Rust/fuzzie/assets/fonts/Inconsolata.ttf"
+            "C:/Users/Laurits/Documents/Hobby/Kode/Rust/fuzzyfinder/assets/fonts/Inconsolata.ttf"
         )),
     );
 

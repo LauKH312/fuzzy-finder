@@ -9,7 +9,7 @@ use std::{
     sync::Mutex,
 };
 
-pub const CACHE_DIR: &str = "C:/ProgramData/fuzzie-finder/cache";
+pub const CACHE_DIR: &str = "C:/ProgramData/fuzzyfinder/cache";
 
 pub fn get_all_in_dir_parallel(dir: &Path) -> Result<BTreeSet<PathBuf>, Box<dyn Error>> {
     let paths = Mutex::new(BTreeSet::new());
@@ -18,6 +18,11 @@ pub fn get_all_in_dir_parallel(dir: &Path) -> Result<BTreeSet<PathBuf>, Box<dyn 
         .split('\n')
         .filter(|line| !line.starts_with('#')) // allow comments
         .collect::<Vec<&str>>();
+
+    // let folder_blacklist = include_str!("../assets/data/folder_blacklist.txt")
+    //     .split('\n')
+    //     .filter(|line| !line.starts_with('#')) // allow comments
+    //     .collect::<Vec<&str>>();
 
     if Path::new(CACHE_DIR).exists() {
         let serialized = fs::read(CACHE_DIR)?;
@@ -28,7 +33,7 @@ pub fn get_all_in_dir_parallel(dir: &Path) -> Result<BTreeSet<PathBuf>, Box<dyn 
 
     let allowed_extensions = HashSet::from_iter(format_whitelist.into_iter());
 
-    walkdir::WalkDir::new(dir.canonicalize().expect("Error canonicalizing path"))
+    walkdir::WalkDir::new(dir)
         .into_iter()
         .par_bridge()
         .filter(|entry| {
@@ -41,7 +46,7 @@ pub fn get_all_in_dir_parallel(dir: &Path) -> Result<BTreeSet<PathBuf>, Box<dyn 
                     Some(ext) => allowed_extensions.contains(&ext),
                     _ => false,
                 },
-                None => true,
+                None => true, // todo: filter out blacklisted folders
             }
         })
         .for_each(|entry| {
